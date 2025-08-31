@@ -33,10 +33,23 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.18);
     }
     
-    .paint-canvas {
-        border: 3px solid #FF6B6B;
-        border-radius: 15px;
+    .paint-pixel {
+        width: 25px;
+        height: 25px;
+        border: 1px solid #ccc;
+        display: inline-block;
+        margin: 1px;
+        cursor: pointer;
+        border-radius: 3px;
+    }
+    
+    .paint-canvas-container {
         background: white;
+        padding: 20px;
+        border-radius: 15px;
+        border: 3px solid #FF6B6B;
+        text-align: center;
+        overflow: auto;
     }
     
     @keyframes rainbow {
@@ -58,6 +71,33 @@ st.markdown("""
     .stButton > button:hover {
         transform: scale(1.05);
         box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .color-palette {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin: 20px 0;
+        flex-wrap: wrap;
+    }
+    
+    .color-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 3px solid white;
+        cursor: pointer;
+        transition: transform 0.2s;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+    
+    .color-btn:hover {
+        transform: scale(1.1);
+    }
+    
+    .color-btn.selected {
+        border: 4px solid #333;
+        transform: scale(1.2);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -362,9 +402,16 @@ def check_math_answer(user_answer):
 
 def initialize_paint_game():
     """Initialize the paint game"""
-    st.session_state.paint_canvas = [[255, 255, 255] for _ in range(400)]  # 20x20 grid
-    st.session_state.paint_color = [255, 0, 0]  # Default red
-    st.session_state.paint_brush_size = 1
+    # Create a smaller, more manageable canvas (12x12)
+    st.session_state.paint_canvas = {}
+    st.session_state.paint_selected_color = "#FF0000"  # Default red
+    st.session_state.paint_canvas_size = 12
+    st.session_state.paint_drawing_mode = True
+    
+    # Initialize with white canvas
+    for i in range(st.session_state.paint_canvas_size):
+        for j in range(st.session_state.paint_canvas_size):
+            st.session_state.paint_canvas[f"{i}_{j}"] = "#FFFFFF"
 
 def show_paint_game():
     """Display the paint studio game"""
@@ -376,77 +423,143 @@ def show_paint_game():
         st.session_state.current_game = 'menu'
         st.rerun()
     
-    # Paint tools
-    st.markdown("### 🖌️ Choose Your Tools")
-    col1, col2, col3, col4 = st.columns(4)
+    # Color palette
+    st.markdown("### 🌈 Choose Your Color")
+    colors = [
+        ("❤️ Red", "#FF0000"),
+        ("💙 Blue", "#0000FF"),
+        ("💚 Green", "#00FF00"),
+        ("💛 Yellow", "#FFFF00"),
+        ("🧡 Orange", "#FFA500"),
+        ("💜 Purple", "#800080"),
+        ("🤎 Brown", "#8B4513"),
+        ("🖤 Black", "#000000"),
+        ("🤍 White", "#FFFFFF"),
+        ("🩷 Pink", "#FFC0CB")
+    ]
     
+    # Create color selection in rows
+    for i in range(0, len(colors), 5):
+        cols = st.columns(5)
+        for j, (color_name, color_code) in enumerate(colors[i:i+5]):
+            with cols[j]:
+                if st.button(color_name, key=f"color_{color_code}", use_container_width=True):
+                    st.session_state.paint_selected_color = color_code
+                    st.rerun()
+    
+    # Show current color
+    st.markdown(f"**Current Color:** {st.session_state.paint_selected_color}")
+    st.markdown(f'<div style="width: 50px; height: 50px; background-color: {st.session_state.paint_selected_color}; border: 2px solid black; border-radius: 5px; display: inline-block;"></div>', 
+                unsafe_allow_html=True)
+    
+    # Tool buttons
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
-        color_choice = st.selectbox("🎨 Color", 
-            ["❤️ Red", "💙 Blue", "💚 Green", "💛 Yellow", "🧡 Orange", "💜 Purple", "🖤 Black", "🤍 White"])
-        color_map = {
-            "❤️ Red": [255, 0, 0], "💙 Blue": [0, 0, 255], "💚 Green": [0, 255, 0],
-            "💛 Yellow": [255, 255, 0], "🧡 Orange": [255, 165, 0], "💜 Purple": [128, 0, 128],
-            "🖤 Black": [0, 0, 0], "🤍 White": [255, 255, 255]
-        }
-        st.session_state.paint_color = color_map[color_choice]
+        if st.button("🗑️ Clear Canvas", key="clear_canvas", use_container_width=True):
+            for i in range(st.session_state.paint_canvas_size):
+                for j in range(st.session_state.paint_canvas_size):
+                    st.session_state.paint_canvas[f"{i}_{j}"] = "#FFFFFF"
+            st.rerun()
     
     with col2:
-        st.session_state.paint_brush_size = st.select_slider("🖌️ Brush Size", [1, 2, 3, 4, 5])
+        if st.button("🌈 Rainbow Fill", key="rainbow_fill", use_container_width=True):
+            rainbow_colors = ["#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#4B0082", "#9400D3"]
+            for i in range(st.session_state.paint_canvas_size):
+                for j in range(st.session_state.paint_canvas_size):
+                    st.session_state.paint_canvas[f"{i}_{j}"] = random.choice(rainbow_colors)
+            st.rerun()
     
     with col3:
-        if st.button("🗑️ Clear Canvas", use_container_width=True):
-            st.session_state.paint_canvas = [[255, 255, 255] for _ in range(400)]
+        if st.button("🎯 Fill All", key="fill_all", use_container_width=True):
+            for i in range(st.session_state.paint_canvas_size):
+                for j in range(st.session_state.paint_canvas_size):
+                    st.session_state.paint_canvas[f"{i}_{j}"] = st.session_state.paint_selected_color
             st.rerun()
     
     with col4:
-        if st.button("🌈 Random Colors", use_container_width=True):
-            for i in range(400):
-                st.session_state.paint_canvas[i] = [random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)]
+        if st.button("✨ Sparkle", key="sparkle", use_container_width=True):
+            # Add random sparkles
+            for _ in range(20):
+                i = random.randint(0, st.session_state.paint_canvas_size - 1)
+                j = random.randint(0, st.session_state.paint_canvas_size - 1)
+                sparkle_colors = ["#FFD700", "#FFFF00", "#FFF8DC", "#F0E68C"]
+                st.session_state.paint_canvas[f"{i}_{j}"] = random.choice(sparkle_colors)
             st.rerun()
     
-    # Simple drawing interface (text-based for Streamlit)
-    st.markdown("### ✨ Your Masterpiece")
-    st.markdown("Click the buttons below to paint! Each button represents a pixel on your canvas.")
+    # Canvas display and interaction
+    st.markdown("### ✨ Your Canvas")
+    st.markdown("Click on any square below to paint it with your selected color!")
     
-    # Create a simple grid for painting
-    rows, cols = 20, 20
-    for row in range(rows):
-        columns = st.columns(cols)
-        for col in range(cols):
-            index = row * cols + col
-            with columns[col]:
-                # Create colored button
-                r, g, b = st.session_state.paint_canvas[index]
-                if st.button("⬜", key=f"paint_{index}", 
-                           help=f"Paint pixel ({row}, {col})"):
-                    # Apply brush size
-                    for dr in range(-st.session_state.paint_brush_size + 1, st.session_state.paint_brush_size):
-                        for dc in range(-st.session_state.paint_brush_size + 1, st.session_state.paint_brush_size):
-                            new_row, new_col = row + dr, col + dc
-                            if 0 <= new_row < rows and 0 <= new_col < cols:
-                                new_index = new_row * cols + new_col
-                                st.session_state.paint_canvas[new_index] = st.session_state.paint_color.copy()
+    # Create the painting canvas
+    canvas_html = '<div class="paint-canvas-container"><table style="border-collapse: collapse; margin: auto;">'
+    
+    for i in range(st.session_state.paint_canvas_size):
+        canvas_html += '<tr>'
+        for j in range(st.session_state.paint_canvas_size):
+            color = st.session_state.paint_canvas.get(f"{i}_{j}", "#FFFFFF")
+            canvas_html += f'<td style="width: 30px; height: 30px; background-color: {color}; border: 1px solid #ccc; cursor: pointer;" onclick=""></td>'
+        canvas_html += '</tr>'
+    
+    canvas_html += '</table></div>'
+    st.markdown(canvas_html, unsafe_allow_html=True)
+    
+    # Interactive painting using buttons (simplified approach)
+    st.markdown("**Click the buttons below to paint:**")
+    
+    # Create painting interface with smaller grid for better performance
+    for i in range(st.session_state.paint_canvas_size):
+        cols = st.columns(st.session_state.paint_canvas_size)
+        for j in range(st.session_state.paint_canvas_size):
+            with cols[j]:
+                current_color = st.session_state.paint_canvas.get(f"{i}_{j}", "#FFFFFF")
+                # Show colored button
+                button_style = f"background-color: {current_color}; width: 25px; height: 25px; border: 1px solid #333;"
+                if st.button("⬜", key=f"pixel_{i}_{j}", help=f"Paint ({i},{j})"):
+                    st.session_state.paint_canvas[f"{i}_{j}"] = st.session_state.paint_selected_color
                     st.rerun()
     
     # Art gallery
     st.markdown("---")
-    with st.expander("🖼️ Save Your Art"):
-        art_name = st.text_input("Name your masterpiece:", placeholder="My Beautiful Painting")
-        if st.button("💾 Save to Gallery") and art_name:
+    st.markdown("### 🏛️ Art Gallery")
+    
+    with st.expander("💾 Save Your Masterpiece"):
+        art_name = st.text_input("Name your artwork:", placeholder="My Beautiful Creation", key="art_name_input")
+        if st.button("🎨 Save to Gallery", key="save_art") and art_name:
             if 'art_gallery' not in st.session_state:
                 st.session_state.art_gallery = []
+            
             st.session_state.art_gallery.append({
                 'name': art_name,
                 'artist': st.session_state.player_name,
-                'canvas': st.session_state.paint_canvas.copy()
+                'canvas': st.session_state.paint_canvas.copy(),
+                'timestamp': time.time()
             })
-            st.success(f"🎨 '{art_name}' saved to your gallery!")
+            st.success(f"🎉 '{art_name}' has been saved to your gallery!")
     
-    # Show gallery if exists
+    # Display gallery
     if 'art_gallery' in st.session_state and st.session_state.art_gallery:
-        with st.expander(f"🏛️ {st.session_state.player_name}'s Art Gallery"):
-            for i, artwork in enumerate(st.session_state.art_gallery):
-                st.markdown(f"**{artwork['name']}** by {artwork['artist']}")
+        with st.expander(f"🖼️ {st.session_state.player_name}'s Art Collection ({len(st.session_state.art_gallery)} artworks)"):
+            for idx, artwork in enumerate(st.session_state.art_gallery):
+                st.markdown(f"**🎨 {artwork['name']}** by {artwork['artist']}")
+                
+                # Display a mini version of the artwork
+                mini_canvas = '<div style="margin: 10px 0;"><table style="border-collapse: collapse;">'
+                for i in range(st.session_state.paint_canvas_size):
+                    mini_canvas += '<tr>'
+                    for j in range(st.session_state.paint_canvas_size):
+                        color = artwork['canvas'].get(f"{i}_{j}", "#FFFFFF")
+                        mini_canvas += f'<td style="width: 15px; height: 15px; background-color: {color}; border: 1px solid #ddd;"></td>'
+                    mini_canvas += '</tr>'
+                mini_canvas += '</table></div>'
+                st.markdown(mini_canvas, unsafe_allow_html=True)
+                
+                # Option to load artwork back to canvas
+                if st.button(f"📥 Load '{artwork['name']}'", key=f"load_art_{idx}"):
+                    st.session_state.paint_canvas = artwork['canvas'].copy()
+                    st.success(f"Loaded '{artwork['name']}' to canvas!")
+                    st.rerun()
+                
+                st.markdown("---")
 
 # Main app logic
 def main():
@@ -461,6 +574,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
 
