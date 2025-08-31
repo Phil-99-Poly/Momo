@@ -1,3 +1,5 @@
+# Game Version 2 (three games involved) - Fixed Paint Studio
+
 import streamlit as st
 import random
 import time
@@ -125,7 +127,7 @@ def show_main_menu():
         st.markdown(f"### Hello {st.session_state.player_name}! 👋 Ready to have some fun?")
         
         # Game selection
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         
         with col1:
             st.markdown("""
@@ -155,18 +157,18 @@ def show_main_menu():
                 initialize_math_game()
                 st.rerun()
         
-        with col3:
+        with col4:
             st.markdown("""
             <div class="game-card">
-                <h2>🎨 Paint Studio</h2>
-                <p>Create beautiful artwork with colors and shapes!</p>
-                <h3>🖌️ 🎨 🌈 ✨</h3>
+                <h2>📐 Shape Explorer</h2>
+                <p>Learn about shapes and become a geometry hero!</p>
+                <h3>🔴 🔷 🔺 ⭐</h3>
             </div>
             """, unsafe_allow_html=True)
             
-            if st.button("🎨 Open Paint Studio", key="paint", use_container_width=True):
-                st.session_state.current_game = 'paint'
-                initialize_paint_game()
+            if st.button("🔍 Explore Shapes", key="shapes", use_container_width=True):
+                st.session_state.current_game = 'shapes'
+                initialize_shape_game()
                 st.rerun()
 
 def initialize_memory_game():
@@ -400,7 +402,65 @@ def check_math_answer(user_answer):
     time.sleep(1)
     generate_math_problem()
 
-def initialize_paint_game():
+def initialize_shape_game():
+    """Initialize the shape recognition game"""
+    # Define shapes with their SVG code, name, and fun facts
+    shapes = {
+        "circle": {
+            "svg": '<svg width="200" height="200" viewBox="0 0 200 200"><circle cx="100" cy="100" r="80" fill="#FF6B6B" stroke="#333" stroke-width="3"/></svg>',
+            "emoji": "🔴",
+            "fun_fact": "A circle is perfectly round like a ball!"
+        },
+        "square": {
+            "svg": '<svg width="200" height="200" viewBox="0 0 200 200"><rect x="40" y="40" width="120" height="120" fill="#4ECDC4" stroke="#333" stroke-width="3"/></svg>',
+            "emoji": "🟩",
+            "fun_fact": "A square has 4 equal sides and 4 corners!"
+        },
+        "triangle": {
+            "svg": '<svg width="200" height="200" viewBox="0 0 200 200"><polygon points="100,30 30,170 170,170" fill="#45B7D1" stroke="#333" stroke-width="3"/></svg>',
+            "emoji": "🔺",
+            "fun_fact": "A triangle has 3 sides and 3 corners!"
+        },
+        "rectangle": {
+            "svg": '<svg width="200" height="200" viewBox="0 0 200 200"><rect x="30" y="60" width="140" height="80" fill="#96CEB4" stroke="#333" stroke-width="3"/></svg>',
+            "emoji": "🟨",
+            "fun_fact": "A rectangle has 4 sides - 2 long and 2 short!"
+        },
+        "star": {
+            "svg": '<svg width="200" height="200" viewBox="0 0 200 200"><polygon points="100,20 120,70 175,70 135,105 150,160 100,130 50,160 65,105 25,70 80,70" fill="#FFEAA7" stroke="#333" stroke-width="3"/></svg>',
+            "emoji": "⭐",
+            "fun_fact": "A star has 5 points and shines bright!"
+        },
+        "diamond": {
+            "svg": '<svg width="200" height="200" viewBox="0 0 200 200"><polygon points="100,30 170,100 100,170 30,100" fill="#DDA0DD" stroke="#333" stroke-width="3"/></svg>',
+            "emoji": "💎",
+            "fun_fact": "A diamond is like a square turned sideways!"
+        },
+        "oval": {
+            "svg": '<svg width="200" height="200" viewBox="0 0 200 200"><ellipse cx="100" cy="100" rx="90" ry="60" fill="#FFB6C1" stroke="#333" stroke-width="3"/></svg>',
+            "emoji": "🥚",
+            "fun_fact": "An oval is like a stretched circle, like an egg!"
+        },
+        "heart": {
+            "svg": '<svg width="200" height="200" viewBox="0 0 200 200"><path d="M100,180 C100,180 20,120 20,80 C20,50 40,30 70,30 C85,30 100,40 100,40 C100,40 115,30 130,30 C160,30 180,50 180,80 C180,120 100,180 100,180 Z" fill="#FF69B4" stroke="#333" stroke-width="3"/></svg>',
+            "emoji": "💖",
+            "fun_fact": "A heart shape shows love and kindness!"
+        }
+    }
+    
+    st.session_state.shapes_data = shapes
+    st.session_state.shapes_score = 0
+    st.session_state.shapes_total_questions = 0
+    st.session_state.shapes_streak = 0
+    st.session_state.shapes_level = 1
+    st.session_state.shapes_encouragement = ""
+    generate_new_shape()
+
+def generate_new_shape():
+    """Generate a new shape for the quiz"""
+    shapes_list = list(st.session_state.shapes_data.keys())
+    st.session_state.current_shape = random.choice(shapes_list)
+    st.session_state.user_shape_answer = ""
     """Initialize the paint game"""
     # Create a smaller, more manageable canvas (12x12)
     st.session_state.paint_canvas = {}
@@ -569,9 +629,9 @@ def main():
         show_memory_game()
     elif st.session_state.current_game == 'math':
         show_math_game()
+    elif st.session_state.current_game == 'shapes':
+        show_shape_game()
     elif st.session_state.current_game == 'paint':
         show_paint_game()
 
 if __name__ == "__main__":
-    main()
-
