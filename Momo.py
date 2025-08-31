@@ -1,5 +1,3 @@
-# Game Version 2 (three games involved) - Fixed Paint Studio
-
 import streamlit as st
 import random
 import time
@@ -126,7 +124,7 @@ def show_main_menu():
     if st.session_state.player_name:
         st.markdown(f"### Hello {st.session_state.player_name}! 👋 Ready to have some fun?")
         
-        # Game selection
+        # Game selection - 4 games
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
@@ -157,6 +155,20 @@ def show_main_menu():
                 initialize_math_game()
                 st.rerun()
         
+        with col3:
+            st.markdown("""
+            <div class="game-card">
+                <h2>🎨 Paint Studio</h2>
+                <p>Create beautiful artwork with colors and shapes!</p>
+                <h3>🖌️ 🎨 🌈 ✨</h3>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("🎨 Open Paint Studio", key="paint", use_container_width=True):
+                st.session_state.current_game = 'paint'
+                initialize_paint_game()
+                st.rerun()
+
         with col4:
             st.markdown("""
             <div class="game-card">
@@ -171,6 +183,7 @@ def show_main_menu():
                 initialize_shape_game()
                 st.rerun()
 
+# ======= MEMORY GAME FUNCTIONS =======
 def initialize_memory_game():
     """Initialize the memory matching game"""
     emojis = ["🐶", "🐱", "🐸", "🦋", "🌟", "🎈", "🍎", "🎯"]
@@ -284,6 +297,7 @@ def check_memory_match():
         st.session_state.memory_second_card = None
         st.session_state.memory_moves += 1
 
+# ======= MATH GAME FUNCTIONS =======
 def initialize_math_game():
     """Initialize the math game"""
     st.session_state.math_score = 0
@@ -402,6 +416,7 @@ def check_math_answer(user_answer):
     time.sleep(1)
     generate_math_problem()
 
+# ======= SHAPE GAME FUNCTIONS =======
 def initialize_shape_game():
     """Initialize the shape recognition game"""
     # Define shapes with their SVG code, name, and fun facts
@@ -461,6 +476,152 @@ def generate_new_shape():
     shapes_list = list(st.session_state.shapes_data.keys())
     st.session_state.current_shape = random.choice(shapes_list)
     st.session_state.user_shape_answer = ""
+
+def show_shape_game():
+    """Display the shape recognition game"""
+    st.markdown("# 📐 Shape Explorer Game")
+    st.markdown(f"### Hello {st.session_state.player_name}! Let's learn about shapes together! 🌟")
+    
+    # Back button
+    if st.button("🏠 Back to Menu", key="back_shapes"):
+        st.session_state.current_game = 'menu'
+        st.rerun()
+    
+    # Game stats
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("⭐ Score", st.session_state.shapes_score)
+    with col2:
+        st.metric("📝 Questions", st.session_state.shapes_total_questions)
+    with col3:
+        accuracy = (st.session_state.shapes_score / max(1, st.session_state.shapes_total_questions)) * 100
+        st.metric("🎯 Accuracy", f"{accuracy:.0f}%")
+    with col4:
+        st.metric("🔥 Streak", st.session_state.shapes_streak)
+    
+    # Encouragement message
+    if st.session_state.shapes_encouragement:
+        st.success(st.session_state.shapes_encouragement)
+    
+    st.markdown("---")
+    
+    # Current shape display
+    current_shape_data = st.session_state.shapes_data[st.session_state.current_shape]
+    
+    st.markdown("### 🔍 What shape is this?")
+    
+    # Display the shape in a centered container
+    st.markdown(f"""
+    <div style="text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+    padding: 30px; border-radius: 20px; margin: 20px 0;">
+        <div style="background: white; border-radius: 15px; padding: 20px; display: inline-block; 
+        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);">
+            {current_shape_data['svg']}
+        </div>
+        <div style="color: white; font-size: 24px; margin-top: 15px; font-weight: bold;">
+            Can you name this shape? {current_shape_data['emoji']}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Answer options (multiple choice for kindergarteners)
+    st.markdown("### 🤔 Choose the correct answer:")
+    
+    # Create multiple choice options
+    shape_names = list(st.session_state.shapes_data.keys())
+    correct_answer = st.session_state.current_shape
+    
+    # Generate 3 wrong answers
+    wrong_answers = [name for name in shape_names if name != correct_answer]
+    selected_wrong = random.sample(wrong_answers, min(3, len(wrong_answers)))
+    
+    # Combine and shuffle options
+    all_options = [correct_answer] + selected_wrong
+    random.shuffle(all_options)
+    
+    # Create answer buttons in a 2x2 grid
+    cols = st.columns(2)
+    for i, option in enumerate(all_options):
+        with cols[i % 2]:
+            option_emoji = st.session_state.shapes_data[option]['emoji']
+            button_label = f"{option_emoji} {option.title()}"
+            
+            if st.button(button_label, key=f"shape_option_{i}", use_container_width=True):
+                check_shape_answer(option)
+                st.rerun()
+    
+    # Fun fact about current shape
+    st.markdown("---")
+    st.info(f"💡 **Fun Fact:** {current_shape_data['fun_fact']}")
+    
+    # Skip button for if kids get stuck
+    col1, col2, col3 = st.columns(3)
+    with col2:
+        if st.button("⏭️ Show Me a New Shape", key="skip_shape", use_container_width=True):
+            generate_new_shape()
+            st.session_state.shapes_encouragement = "That's okay! Let's try a different shape! 🌈"
+            st.rerun()
+    
+    # Progress and achievements
+    if st.session_state.shapes_total_questions > 0:
+        st.markdown("---")
+        st.markdown("### 🏆 Your Progress")
+        
+        progress_value = min(100, (st.session_state.shapes_score / max(1, st.session_state.shapes_total_questions)) * 100)
+        st.progress(progress_value / 100)
+        
+        # Achievement badges
+        achievements = []
+        if st.session_state.shapes_score >= 1:
+            achievements.append("🌟 First Shape!")
+        if st.session_state.shapes_score >= 5:
+            achievements.append("🎯 Shape Detective!")
+        if st.session_state.shapes_score >= 10:
+            achievements.append("👑 Shape Master!")
+        if st.session_state.shapes_streak >= 3:
+            achievements.append("🔥 On Fire!")
+        if accuracy >= 80:
+            achievements.append("🎖️ Super Accurate!")
+        
+        if achievements:
+            st.markdown("**🏅 Achievements Unlocked:** " + " ".join(achievements))
+
+def check_shape_answer(selected_answer):
+    """Check if the shape answer is correct"""
+    correct_answer = st.session_state.current_shape
+    st.session_state.shapes_total_questions += 1
+    
+    if selected_answer == correct_answer:
+        st.session_state.shapes_score += 1
+        st.session_state.shapes_streak += 1
+        
+        # Encouraging messages based on streak
+        if st.session_state.shapes_streak >= 5:
+            st.session_state.shapes_encouragement = f"🎉 AMAZING! You got {selected_answer} right! You're on a {st.session_state.shapes_streak} shape streak! ⭐⭐⭐"
+        elif st.session_state.shapes_streak >= 3:
+            st.session_state.shapes_encouragement = f"🌟 Fantastic! {selected_answer.title()} is correct! You're doing great! 🎯"
+        else:
+            encouraging_phrases = [
+                f"🎉 Yes! That's a {selected_answer}! Great job!",
+                f"⭐ Perfect! You found the {selected_answer}!",
+                f"🌈 Wonderful! {selected_answer.title()} is right!",
+                f"🎊 Super! You know your {selected_answer}s!"
+            ]
+            st.session_state.shapes_encouragement = random.choice(encouraging_phrases)
+        
+        # Show balloons for milestones
+        if st.session_state.shapes_score % 5 == 0:
+            st.balloons()
+    else:
+        st.session_state.shapes_streak = 0
+        current_shape_emoji = st.session_state.shapes_data[correct_answer]['emoji']
+        st.session_state.shapes_encouragement = f"That's okay! This shape is a {correct_answer} {current_shape_emoji}. Let's try another one! 🌟"
+    
+    # Generate new shape for next question
+    generate_new_shape()
+
+# ======= PAINT GAME FUNCTIONS =======
+def initialize_paint_game():
     """Initialize the paint game"""
     # Create a smaller, more manageable canvas (12x12)
     st.session_state.paint_canvas = {}
@@ -621,8 +782,9 @@ def show_paint_game():
                 
                 st.markdown("---")
 
-# Main app logic
+# ======= MAIN APPLICATION =======
 def main():
+    """Main application logic"""
     if st.session_state.current_game == 'menu':
         show_main_menu()
     elif st.session_state.current_game == 'memory':
@@ -636,3 +798,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
