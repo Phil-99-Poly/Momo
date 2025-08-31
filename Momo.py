@@ -13,91 +13,290 @@ st.set_page_config(
 # Custom CSS for kid-friendly styling
 st.markdown("""
 <style>
-    .main-header {
-        background: linear-gradient(90deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4, #FFEAA7);
-        padding: 2rem;
-        border-radius: 20px;
-        text-align: center;
-        margin-bottom: 2rem;
-        animation: rainbow 3s ease-in-out infinite alternate;
+    /* Global body styling */
+    .stApp {
+        background: linear-gradient(45deg, #FFB6C1, #87CEEB, #98FB98, #F0E68C, #DDA0DD, #FFE4B5);
+        background-size: 400% 400%;
+        animation: gradientShift 8s ease infinite;
+        min-height: 100vh;
     }
     
-    .game-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 2rem;
-        border-radius: 20px;
-        text-align: center;
-        color: white;
-        margin: 1rem 0;
-        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-    }
-    
-    .paint-pixel {
-        width: 25px;
-        height: 25px;
-        border: 1px solid #ccc;
-        display: inline-block;
-        margin: 1px;
-        cursor: pointer;
-        border-radius: 3px;
-    }
-    
-    .paint-canvas-container {
-        background: white;
-        padding: 20px;
-        border-radius: 15px;
-        border: 3px solid #FF6B6B;
-        text-align: center;
-        overflow: auto;
-    }
-    
-    @keyframes rainbow {
+    @keyframes gradientShift {
         0% { background-position: 0% 50%; }
-        100% { background-position: 100% 50%; }
+        25% { background-position: 100% 50%; }
+        50% { background-position: 100% 100%; }
+        75% { background-position: 0% 100%; }
+        100% { background-position: 0% 50%; }
     }
     
-    .stButton > button {
-        background: linear-gradient(90deg, #FF6B6B, #4ECDC4);
+    /* Floating elements animation */
+    .floating-elements {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: -1;
+    }
+    
+    .floating-star {
+        position: absolute;
+        font-size: 30px;
+        animation: float 6s ease-in-out infinite;
+        opacity: 0.7;
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(180deg); }
+    }
+    
+    /* Main header styling */
+    .main-header {
+        background: linear-gradient(135deg, #FF69B4, #FF1493, #FF6347, #FFD700, #ADFF2F, #00CED1, #FF69B4);
+        background-size: 400% 400%;
+        animation: rainbowPulse 4s ease-in-out infinite;
+        padding: 3rem;
+        border-radius: 30px;
+        text-align: center;
+        margin-bottom: 3rem;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        border: 5px solid #FFF;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .main-header::before {
+        content: "⭐🌈⭐🎈⭐🌈⭐🎈⭐🌈⭐🎈⭐🌈⭐🎈⭐🌈⭐🎈⭐🌈⭐🎈";
+        position: absolute;
+        top: 10px;
+        left: 0;
+        right: 0;
+        font-size: 20px;
+        animation: sparkleMove 3s linear infinite;
+        white-space: nowrap;
+    }
+    
+    @keyframes rainbowPulse {
+        0%, 100% { 
+            background-position: 0% 50%;
+            transform: scale(1);
+        }
+        25% { 
+            background-position: 100% 50%;
+            transform: scale(1.02);
+        }
+        50% { 
+            background-position: 100% 100%;
+            transform: scale(1);
+        }
+        75% { 
+            background-position: 0% 100%;
+            transform: scale(1.02);
+        }
+    }
+    
+    @keyframes sparkleMove {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+    
+    .main-header h1 {
+        font-size: 3.5rem !important;
         color: white;
-        border: none;
+        text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+        margin: 1rem 0 !important;
+        animation: bounce 2s ease-in-out infinite;
+    }
+    
+    .main-header h3 {
+        font-size: 1.8rem !important;
+        color: #FFF;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        margin-top: 1rem !important;
+    }
+    
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-10px); }
+        60% { transform: translateY(-5px); }
+    }
+    
+    /* Game cards styling */
+    .game-card {
+        background: linear-gradient(145deg, #FF69B4, #FF1493, #FFD700, #32CD32, #00CED1);
+        background-size: 300% 300%;
+        animation: cardPulse 5s ease-in-out infinite;
+        padding: 2.5rem;
         border-radius: 25px;
-        padding: 0.75rem 2rem;
-        font-size: 18px;
-        font-weight: bold;
+        text-align: center;
+        color: white;
+        margin: 1.5rem 0;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        border: 4px solid #FFF;
+        transform: scale(1);
         transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .game-card::before {
+        content: "✨";
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 25px;
+        animation: twinkle 2s ease-in-out infinite;
+    }
+    
+    @keyframes cardPulse {
+        0%, 100% { 
+            background-position: 0% 50%;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+        50% { 
+            background-position: 100% 50%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+    }
+    
+    @keyframes twinkle {
+        0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        50% { opacity: 0.5; transform: scale(1.2) rotate(180deg); }
+    }
+    
+    .game-card:hover {
+        transform: scale(1.05) rotate(1deg);
+        box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+    }
+    
+    .game-card h2 {
+        font-size: 2rem !important;
+        margin-bottom: 1rem !important;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .game-card h3 {
+        font-size: 2.5rem !important;
+        margin: 1rem 0 !important;
+        animation: wiggle 3s ease-in-out infinite;
+    }
+    
+    @keyframes wiggle {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(5deg); }
+        75% { transform: rotate(-5deg); }
+    }
+    
+    /* Button styling */
+    .stButton > button {
+        background: linear-gradient(45deg, #FF69B4, #FFD700, #32CD32, #00CED1) !important;
+        background-size: 300% 300% !important;
+        animation: buttonShine 3s ease-in-out infinite !important;
+        color: white !important;
+        border: 3px solid #FFF !important;
+        border-radius: 25px !important;
+        padding: 1rem 2.5rem !important;
+        font-size: 1.2rem !important;
+        font-weight: bold !important;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2) !important;
+    }
+    
+    @keyframes buttonShine {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
     }
     
     .stButton > button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        transform: scale(1.1) !important;
+        box-shadow: 0 12px 24px rgba(0,0,0,0.3) !important;
+        border-color: #FFD700 !important;
     }
     
-    .color-palette {
-        display: flex;
-        gap: 10px;
-        justify-content: center;
-        margin: 20px 0;
-        flex-wrap: wrap;
+    /* Input styling */
+    .stTextInput > div > div > input {
+        border: 3px solid #FF69B4 !important;
+        border-radius: 15px !important;
+        padding: 15px !important;
+        font-size: 1.2rem !important;
+        background: rgba(255,255,255,0.9) !important;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
     }
     
-    .color-btn {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        border: 3px solid white;
-        cursor: pointer;
-        transition: transform 0.2s;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    .stTextInput > div > div > input:focus {
+        border-color: #FFD700 !important;
+        box-shadow: 0 8px 20px rgba(255,215,0,0.3) !important;
     }
     
-    .color-btn:hover {
-        transform: scale(1.1);
+    /* Metrics styling */
+    .metric-container div {
+        background: linear-gradient(135deg, #FFB6C1, #87CEEB) !important;
+        border-radius: 15px !important;
+        padding: 10px !important;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+        border: 2px solid #FFF !important;
     }
     
-    .color-btn.selected {
-        border: 4px solid #333;
-        transform: scale(1.2);
+    /* Paint canvas styling */
+    .paint-canvas-container {
+        background: white;
+        padding: 25px;
+        border-radius: 20px;
+        border: 5px solid #FF69B4;
+        text-align: center;
+        overflow: auto;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        animation: canvasPulse 4s ease-in-out infinite;
+    }
+    
+    @keyframes canvasPulse {
+        0%, 100% { border-color: #FF69B4; }
+        25% { border-color: #FFD700; }
+        50% { border-color: #32CD32; }
+        75% { border-color: #00CED1; }
+    }
+    
+    /* Happy decorative elements */
+    .happy-decoration {
+        position: fixed;
+        font-size: 40px;
+        animation: happyFloat 8s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 1000;
+    }
+    
+    @keyframes happyFloat {
+        0%, 100% { 
+            transform: translateY(0px) rotate(0deg);
+            opacity: 0.8;
+        }
+        25% { 
+            transform: translateY(-30px) rotate(90deg);
+            opacity: 1;
+        }
+        50% { 
+            transform: translateY(-20px) rotate(180deg);
+            opacity: 0.6;
+        }
+        75% { 
+            transform: translateY(-35px) rotate(270deg);
+            opacity: 1;
+        }
+    }
+    
+    /* Page title styling */
+    h1, h2, h3 {
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1) !important;
+    }
+    
+    /* Success/Info messages styling */
+    .stSuccess, .stInfo {
+        border-radius: 15px !important;
+        border: 3px solid #32CD32 !important;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -798,4 +997,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
