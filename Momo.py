@@ -635,3 +635,4 @@ def main():
         show_paint_game()
 
 if __name__ == "__main__":
+    main()
