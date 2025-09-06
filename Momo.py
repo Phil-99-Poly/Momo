@@ -1,7 +1,3 @@
-
-
-# ======= REPLACE THE AUTHENTICATION SECTION WITH THIS VERSION =======
-# This version adds persistent storage using JSON files
 import streamlit as st
 import random
 import time
@@ -725,11 +721,18 @@ def show_memory_game():
         st.info(f"🏆 Completed in {st.session_state.memory_moves} moves and {elapsed_time} seconds!")
         
 
- update_user_game_stats('memory', {
-     'games_played': st.session_state.users_db[st.session_state.current_user]['game_stats']['memory']['games_played'] + 1,
-     'best_moves': st.session_state.memory_moves,
-     'best_time': elapsed_time
- })
+# update_user_game_stats('memory', {
+#     'games_played': st.session_state.users_db[st.session_state.current_user]['game_stats']['memory']['games_played'] + 1,
+#     'best_moves': st.session_state.memory_moves,
+#     'best_time': elapsed_time
+# })
+
+
+update_user_game_stats('memory', {
+    'games_played': st.session_state.users_db[st.session_state.current_user]['game_stats']['memory']['games_played'] + 1,
+    'best_moves': st.session_state.memory_moves,
+    'best_time': elapsed_time
+})
 
 
         if st.button("🎮 Play Again", key="memory_again"):
@@ -871,8 +874,6 @@ def show_math_game():
             check_math_answer(user_answer)
             st.rerun()
     
-
-
     with col2:
         if st.button("⏭️ Skip Question", key="skip_math", use_container_width=True):
             st.session_state.math_streak = 0
@@ -916,16 +917,6 @@ def check_math_answer(user_answer):
     
     time.sleep(1)
     generate_math_problem()
-
-# For Math Game - add this when checking answers:
- update_user_game_stats('math', {
-     'questions_answered': st.session_state.users_db[st.session_state.current_user]['game_stats']['math']['questions_answered'] + 1,
-     'correct_answers': st.session_state.users_db[st.session_state.current_user]['game_stats']['math']['correct_answers'] + (1 if correct else 0),
-     'best_streak': st.session_state.math_streak
- })
-
-
-
 
 # ======= SHAPE GAME FUNCTIONS =======
 def initialize_shape_game():
@@ -1309,9 +1300,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
