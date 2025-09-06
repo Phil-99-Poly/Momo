@@ -1,13 +1,40 @@
+# This version adds persistent storage using JSON files
 import streamlit as st
 import random
 import time
 import math
-
 import hashlib
+import json
+import os
+from datetime import datetime
+
+# File to store user data
+USER_DATA_FILE = "kids_games_users.json"
+
+def load_users_from_file():
+    """Load user data from JSON file"""
+    try:
+        if os.path.exists(USER_DATA_FILE):
+            with open(USER_DATA_FILE, 'r') as f:
+                return json.load(f)
+        return {}
+    except Exception as e:
+        st.error(f"Error loading user data: {e}")
+        return {}
+
+def save_users_to_file(users_db):
+    """Save user data to JSON file"""
+    try:
+        with open(USER_DATA_FILE, 'w') as f:
+            json.dump(users_db, f, indent=2)
+        return True
+    except Exception as e:
+        st.error(f"Error saving user data: {e}")
+        return False
 
 # Initialize authentication session state
 if 'users_db' not in st.session_state:
-    st.session_state.users_db = {}
+    st.session_state.users_db = load_users_from_file()
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'current_user' not in st.session_state:
@@ -20,28 +47,110 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def register_user(username, password, display_name):
-    """Register a new user"""
+    """Register a new user and save to file"""
     if username in st.session_state.users_db:
         return False, "Username already exists!"
     
     st.session_state.users_db[username] = {
         'password': hash_password(password),
-        'display_name': display_name
+        'display_name': display_name,
+        'created_date': datetime.now().isoformat(),
+        'last_login': None,
+        'total_games_played': 0,
+        'game_stats': {
+            'memory': {'games_played': 0, 'best_moves': None, 'best_time': None},
+            'math': {'questions_answered': 0, 'correct_answers': 0, 'best_streak': 0},
+            'shapes': {'questions_answered': 0, 'correct_answers': 0, 'best_streak': 0},
+            'paint': {'artworks_created': 0}
+        }
     }
-    return True, "Account created successfully!"
+    
+    # Save to file
+    if save_users_to_file(st.session_state.users_db):
+        return True, "Account created successfully!"
+    else:
+        return False, "Error saving account data!"
 
 def login_user(username, password):
-    """Login user"""
+    """Login user and update last login time"""
     if username not in st.session_state.users_db:
         return False, "Username not found!"
     
     if st.session_state.users_db[username]['password'] != hash_password(password):
         return False, "Incorrect password!"
     
+    # Update last login time
+    st.session_state.users_db[username]['last_login'] = datetime.now().isoformat()
+    save_users_to_file(st.session_state.users_db)
+    
     st.session_state.logged_in = True
     st.session_state.current_user = username
     st.session_state.player_name = st.session_state.users_db[username]['display_name']
     return True, "Login successful!"
+
+def update_user_game_stats(game_type, stats_update):
+    """Update and save user game statistics"""
+    if st.session_state.current_user and st.session_state.current_user in st.session_state.users_db:
+        user_data = st.session_state.users_db[st.session_state.current_user]
+        
+        # Update total games
+        user_data['total_games_played'] += 1
+        
+        # Update specific game stats
+        if game_type in user_data['game_stats']:
+            for stat, value in stats_update.items():
+                if stat in user_data['game_stats'][game_type]:
+                    if stat.startswith('best_'):
+                        current_best = user_data['game_stats'][game_type][stat]
+                        if current_best is None:
+                            user_data['game_stats'][game_type][stat] = value
+                        elif stat in ['best_moves', 'best_time'] and value < current_best:
+                            user_data['game_stats'][game_type][stat] = value
+                        elif stat == 'best_streak' and value > current_best:
+                            user_data['game_stats'][game_type][stat] = value
+                    else:
+                        user_data['game_stats'][game_type][stat] = value
+        
+        # Save updated stats to file
+        save_users_to_file(st.session_state.users_db)
+
+def show_user_stats():
+    """Display user statistics"""
+    if st.session_state.current_user:
+        user_data = st.session_state.users_db[st.session_state.current_user]
+        
+        with st.expander(f"📊 {user_data['display_name']}'s Stats"):
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.metric("🎮 Total Games", user_data['total_games_played'])
+                memory_stats = user_data['game_stats']['memory']
+                if memory_stats['best_moves']:
+                    st.metric("🧩 Best Memory", f"{memory_stats['best_moves']} moves")
+                else:
+                    st.metric("🧩 Memory Games", memory_stats['games_played'])
+            
+            with col2:
+                math_stats = user_data['game_stats']['math']
+                if math_stats['questions_answered'] > 0:
+                    accuracy = (math_stats['correct_answers'] / math_stats['questions_answered']) * 100
+                    st.metric("🧮 Math Accuracy", f"{accuracy:.1f}%")
+                st.metric("🔥 Math Best Streak", math_stats['best_streak'])
+            
+            with col3:
+                shapes_stats = user_data['game_stats']['shapes']
+                if shapes_stats['questions_answered'] > 0:
+                    accuracy = (shapes_stats['correct_answers'] / shapes_stats['questions_answered']) * 100
+                    st.metric("📐 Shapes Accuracy", f"{accuracy:.1f}%")
+                paint_stats = user_data['game_stats']['paint']
+                st.metric("🎨 Artworks", paint_stats['artworks_created'])
+            
+            # Account info
+            created_date = datetime.fromisoformat(user_data['created_date']).strftime("%Y-%m-%d")
+            st.info(f"Account created: {created_date}")
+            if user_data.get('last_login'):
+                last_login = datetime.fromisoformat(user_data['last_login']).strftime("%Y-%m-%d %H:%M")
+                st.info(f"Last login: {last_login}")
 
 def show_auth_screen():
     """Show authentication screen"""
@@ -51,6 +160,10 @@ def show_auth_screen():
         <h3>Please login or create an account to play!</h3>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Show existing users count
+    if st.session_state.users_db:
+        st.info(f"📊 {len(st.session_state.users_db)} players have joined our games!")
     
     # Toggle between login and register
     col1, col2 = st.columns(2)
@@ -64,64 +177,115 @@ def show_auth_screen():
     st.markdown("---")
     
     if st.session_state.auth_mode == 'login':
-        st.markdown("### 🔑 Login")
+        st.markdown("### 🔑 Login to Your Account")
         with st.form("login_form"):
             username = st.text_input("👤 Username")
             password = st.text_input("🔒 Password", type="password")
             
-            if st.form_submit_button("Login", use_container_width=True):
+            if st.form_submit_button("🚀 Login", use_container_width=True):
                 if username and password:
                     success, message = login_user(username, password)
                     if success:
-                        st.success(message)
+                        st.success(f"🎉 {message}")
+                        time.sleep(1)
                         st.rerun()
                     else:
-                        st.error(message)
+                        st.error(f"❌ {message}")
                 else:
-                    st.warning("Please enter both username and password!")
+                    st.warning("⚠️ Please enter both username and password!")
+        
+        # Show hint for demo
+        if st.session_state.users_db:
+            with st.expander("🔍 Registered Users (for testing)"):
+                for username, data in st.session_state.users_db.items():
+                    st.write(f"👤 **{username}** - {data['display_name']}")
     
     else:  # register mode
         st.markdown("### 📝 Create New Account")
         with st.form("register_form"):
-            username = st.text_input("👤 Choose Username")
-            display_name = st.text_input("🌟 Your Display Name (what we'll call you in games)")
-            password = st.text_input("🔒 Choose Password", type="password")
-            confirm_password = st.text_input("🔒 Confirm Password", type="password")
+            col1, col2 = st.columns(2)
+            with col1:
+                username = st.text_input("👤 Choose Username", help="This will be your login name")
+                display_name = st.text_input("🌟 Display Name", help="What we'll call you in games")
+            with col2:
+                password = st.text_input("🔒 Choose Password", type="password", help="At least 4 characters")
+                confirm_password = st.text_input("🔒 Confirm Password", type="password")
             
-            if st.form_submit_button("Create Account", use_container_width=True):
+            if st.form_submit_button("🎨 Create Account", use_container_width=True):
                 if username and display_name and password and confirm_password:
                     if password != confirm_password:
-                        st.error("Passwords don't match!")
+                        st.error("❌ Passwords don't match!")
                     elif len(password) < 4:
-                        st.error("Password must be at least 4 characters long!")
+                        st.error("❌ Password must be at least 4 characters long!")
+                    elif len(username) < 3:
+                        st.error("❌ Username must be at least 3 characters long!")
                     else:
                         success, message = register_user(username, password, display_name)
                         if success:
-                            st.success(message)
-                            st.info("Now you can login with your new account!")
+                            st.success(f"🎉 {message}")
+                            st.info("🚀 Now you can login with your new account!")
+                            st.balloons()
+                            time.sleep(2)
                             st.session_state.auth_mode = 'login'
+                            st.rerun()
                         else:
-                            st.error(message)
+                            st.error(f"❌ {message}")
                 else:
-                    st.warning("Please fill in all fields!")
+                    st.warning("⚠️ Please fill in all fields!")
 
 # Check if user is logged in before showing the main app
 if not st.session_state.logged_in:
     show_auth_screen()
     st.stop()  # Stop execution here if not logged in
 
-# Add logout button to sidebar when logged in
+# Add user info and logout to sidebar when logged in
 with st.sidebar:
-    st.markdown(f"### 👋 Welcome, {st.session_state.player_name}!")
-    if st.button("🚪 Logout"):
+    st.markdown(f"### 👋 Welcome back!")
+    st.markdown(f"**🌟 {st.session_state.player_name}**")
+    
+    # Show user stats
+    show_user_stats()
+    
+    st.markdown("---")
+    if st.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.current_user = None
         st.session_state.player_name = ''
         st.session_state.current_game = 'menu'
         st.rerun()
 
-# ======= END OF AUTHENTICATION SECTION =======
-# Your existing code continues from here...
+# ======= END OF PERSISTENT AUTHENTICATION SECTION =======
+
+# NOTE: You'll also need to update your game completion functions to save stats
+# Add these function calls when games are completed:
+
+# For Memory Game - add this when game completes:
+# update_user_game_stats('memory', {
+#     'games_played': st.session_state.users_db[st.session_state.current_user]['game_stats']['memory']['games_played'] + 1,
+#     'best_moves': st.session_state.memory_moves,
+#     'best_time': elapsed_time
+# })
+
+# For Math Game - add this when checking answers:
+# update_user_game_stats('math', {
+#     'questions_answered': st.session_state.users_db[st.session_state.current_user]['game_stats']['math']['questions_answered'] + 1,
+#     'correct_answers': st.session_state.users_db[st.session_state.current_user]['game_stats']['math']['correct_answers'] + (1 if correct else 0),
+#     'best_streak': st.session_state.math_streak
+# })
+
+# Similar updates for shapes and paint games...
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1122,3 +1286,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
