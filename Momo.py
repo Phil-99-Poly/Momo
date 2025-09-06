@@ -735,7 +735,7 @@ update_user_game_stats('memory', {
 })
 
 
-        if st.button("🎮 Play Again", key="memory_again"):
+    if st.button("🎮 Play Again", key="memory_again"):
             initialize_memory_game()
             st.rerun()
     
