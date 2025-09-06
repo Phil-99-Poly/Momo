@@ -254,37 +254,7 @@ with st.sidebar:
         st.rerun()
 
 # ======= END OF PERSISTENT AUTHENTICATION SECTION =======
-
-# NOTE: You'll also need to update your game completion functions to save stats
-# Add these function calls when games are completed:
-
-# For Memory Game - add this when game completes:
-# update_user_game_stats('memory', {
-#     'games_played': st.session_state.users_db[st.session_state.current_user]['game_stats']['memory']['games_played'] + 1,
-#     'best_moves': st.session_state.memory_moves,
-#     'best_time': elapsed_time
-# })
-
-# For Math Game - add this when checking answers:
-# update_user_game_stats('math', {
-#     'questions_answered': st.session_state.users_db[st.session_state.current_user]['game_stats']['math']['questions_answered'] + 1,
-#     'correct_answers': st.session_state.users_db[st.session_state.current_user]['game_stats']['math']['correct_answers'] + (1 if correct else 0),
-#     'best_streak': st.session_state.math_streak
-# })
-
-# Similar updates for shapes and paint games...
-
-
-
-
-
-
-
-
-
-
-
-
+# Your existing code continues from here...
 
 
 
@@ -720,22 +690,7 @@ def show_memory_game():
         elapsed_time = int(time.time() - st.session_state.memory_start_time)
         st.info(f"🏆 Completed in {st.session_state.memory_moves} moves and {elapsed_time} seconds!")
         
-
-# update_user_game_stats('memory', {
-#     'games_played': st.session_state.users_db[st.session_state.current_user]['game_stats']['memory']['games_played'] + 1,
-#     'best_moves': st.session_state.memory_moves,
-#     'best_time': elapsed_time
-# })
-
-
-update_user_game_stats('memory', {
-    'games_played': st.session_state.users_db[st.session_state.current_user]['game_stats']['memory']['games_played'] + 1,
-    'best_moves': st.session_state.memory_moves,
-    'best_time': elapsed_time
-})
-
-
-    if st.button("🎮 Play Again", key="memory_again"):
+        if st.button("🎮 Play Again", key="memory_again"):
             initialize_memory_game()
             st.rerun()
     
